@@ -1,0 +1,7 @@
+# Illustrative values only; replace the subscription ID and existing Resource Group.
+subscription_id     = "00000000-0000-0000-0000-000000000000"
+resource_group_name = "fk-security-rg"
+policy_name         = "fkFrontDoorShared"
+frontdoor_name   = "fk-shared-frontdoor"
+endpoint_name    = "replace-with-globally-unique-endpoint"
+origin_host_name = "origin.example.com"

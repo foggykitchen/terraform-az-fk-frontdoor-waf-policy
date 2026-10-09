@@ -1,0 +1,5 @@
+# Illustrative values only; replace the subscription ID and existing Resource Group.
+subscription_id     = "00000000-0000-0000-0000-000000000000"
+resource_group_name = "fk-security-rg"
+policy_name         = "fkFrontDoorTuning"
+approved_client_cidrs = ["192.0.2.0/24"]
