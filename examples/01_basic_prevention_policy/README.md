@@ -6,18 +6,9 @@ This lab creates a complete mini-architecture: Front Door Premium, a separately 
 
 ## 🧭 Architecture Overview
 
-```mermaid
-flowchart LR
-  C["Client"] -->|HTTPS| FD["Front Door Premium"]
-  P["Front Door policy<br/>Prevention · DRS 2.2 · Block"] -. "security association" .-> FD
-  FD -->|HTTP 80| LB["Public Standard Load Balancer"]
-  LB -->|HTTP 80| VM["Private NGINX VM<br/>NSG + X-Azure-FDID check"]
-  HP["Azure Load Balancer probe"] -->|HTTP 8080 /health| VM
-  VM --> NAT["NAT Gateway"] --> PKG["Package repositories"]
-  FD -->|Access and security logs| LOG["Log Analytics"]
-```
+![Example 01 — Front Door Premium Prevention architecture](01_basic_prevention_policy_architecture.jpg)
 
-*Figure 1. Resources created in a dedicated lab Resource Group. The policy module owns only the Front Door policy; the pinned Front Door sibling owns delivery and its security association.*
+*Figure 1. Front Door Premium with a Front Door Web Application Firewall Policy in Prevention mode (Microsoft DRS 2.2, Block action). HTTPS client traffic reaches the private NGINX backend over HTTP through a public Standard Load Balancer. The backend subnet is protected by an NSG, outbound connectivity uses a NAT Gateway, and Front Door diagnostics are sent to Log Analytics. The policy module owns only the Front Door policy; the pinned Front Door sibling owns delivery and its security association.*
 
 | File | Responsibility |
 |---|---|
