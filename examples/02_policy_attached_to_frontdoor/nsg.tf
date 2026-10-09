@@ -44,7 +44,7 @@ module "backend_nsg" {
     }
   ]
   subnet_associations = {
-    backend = { subnet_id = module.vnet.subnet_ids[each.key] }
+    backend = { subnet_id = module.vnet.subnet_ids["fk-shared-${each.key}-backend"] }
   }
   tags = var.tags
 }

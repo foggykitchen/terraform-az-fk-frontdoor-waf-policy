@@ -6,7 +6,7 @@ module "nginx" {
   resource_group_name = azurerm_resource_group.foggykitchen_rg.name
   location            = var.location
   deployment_mode     = "vm"
-  subnet_id           = module.vnet.subnet_ids[each.key]
+  subnet_id           = module.vnet.subnet_ids["fk-shared-${each.key}-backend"]
   admin_username      = var.admin_username
   ssh_public_key      = tls_private_key.ssh[each.key].public_key_openssh
   vm_size             = var.vm_size

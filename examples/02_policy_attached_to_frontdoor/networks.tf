@@ -6,7 +6,7 @@ module "vnet" {
   location            = var.location
   address_space       = [var.vnet_address_space]
   subnets = {
-    for key, app in local.applications : key => { address_prefixes = [app.subnet_prefix] }
+    for key, app in local.applications : "fk-shared-${key}-backend" => { address_prefixes = [app.subnet_prefix] }
   }
   tags = var.tags
 }

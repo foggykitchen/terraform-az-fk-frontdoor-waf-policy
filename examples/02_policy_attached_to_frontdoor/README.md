@@ -8,32 +8,9 @@ This is a complete, independent mini-architecture. It needs no existing origin o
 
 ## 🧭 Architecture Overview
 
-```mermaid
-flowchart LR
-  C["Client"] -->|HTTPS 443| A["Front Door Premium A"]
-  C -->|HTTPS 443| B["Front Door Premium B"]
-  P["One shared Front Door policy<br/>Prevention · Microsoft DRS 2.2 · Block"]
-  P -. "same policy ID / association A" .-> A
-  P -. "same policy ID / association B" .-> B
-  subgraph V["Shared VNet 10.60.0.0/16"]
-    subgraph SA["Application A · 10.60.1.0/24"]
-      NA["NSG A · FrontDoor.Backend only"] --> VA["Private NGINX A<br/>accept FDID A only"]
-    end
-    subgraph SB["Application B · 10.60.2.0/24"]
-      NB["NSG B · FrontDoor.Backend only"] --> VB["Private NGINX B<br/>accept FDID B only"]
-    end
-    NAT["Shared NAT Gateway"]
-    VA -->|outbound| NAT
-    VB -->|outbound| NAT
-  end
-  A -->|HTTP 80| LA["Public Standard LB A"] --> NA
-  B -->|HTTP 80| LB["Public Standard LB B"] --> NB
-  NAT --> I["Internet · package installation"]
-  A -. diagnostics .-> LAW["Shared Log Analytics"]
-  B -. diagnostics .-> LAW
-```
+![Two Front Door Premium profiles sharing one Front Door Prevention policy, with separate protected NGINX origins and shared NAT Gateway and Log Analytics](02_policy_attached_to_frontdoor_architecture.jpg)
 
-*Figure 1. Two independent application delivery paths share one Front Door policy by ID. Dotted arrows represent configuration or diagnostics, not application traffic.*
+*Figure 1. Two independent Front Door Premium profiles share the `fkFrontDoorShared` Front Door Web Application Firewall Policy in Prevention mode with Microsoft DRS 2.2 and Block action. Each profile forwards requests through its own public Standard Load Balancer to a private NGINX VM in a separate backend subnet. Subnet NSGs restrict application ingress to Front Door backend traffic, and each NGINX accepts only its own profile's `X-Azure-FDID`. Both applications share a NAT Gateway for outbound connectivity, while both profiles send diagnostics to one Log Analytics workspace. Red arrows show application traffic, blue arrows show diagnostics, and dashed black arrows show policy associations and outbound connectivity.*
 
 The lab creates one Resource Group, one global Front Door policy, two Premium profiles/endpoints/security associations, two public Standard Load Balancers, two private VMs with separate disposable SSH keys, two backend subnets/NSGs, one NAT Gateway and one Log Analytics workspace.
 
@@ -119,25 +96,51 @@ Front Door deployment and global propagation take time. Transient 404 responses 
 
 ## 🖼️ Azure Portal View
 
-No lab 02 runtime screenshots exist yet. Collect real evidence after an approved deployment; then embed each image with `Figure X. Description`, continuing after Figure 1.
+Actual Azure Portal screenshots from the deployed lab:
 
-| Figure | Planned filename | Evidence |
-|---|---|---|
-| 2 | `02_policy_attached_to_frontdoor_resource_group_overview.jpg` | Two profiles, two application backends, one Front Door policy |
-| 3 | `02_policy_attached_to_frontdoor_policy_overview.jpg` | Enabled Premium Prevention policy |
-| 4 | `02_policy_attached_to_frontdoor_managed_rules.jpg` | Microsoft DRS 2.2 and Block |
-| 5 | `02_policy_attached_to_frontdoor_security_policy_a.jpg` | Profile A association and shared policy ID |
-| 6 | `02_policy_attached_to_frontdoor_security_policy_b.jpg` | Profile B association and the same policy ID |
-| 7 | `02_policy_attached_to_frontdoor_origins_a.jpg` | A's own LB origin and healthy probe |
-| 8 | `02_policy_attached_to_frontdoor_origins_b.jpg` | B's distinct LB origin and healthy probe |
-| 9 | `02_policy_attached_to_frontdoor_network_security.jpg` | Separate subnets/NSGs, Front Door and LB-probe rules |
-| 10 | `02_policy_attached_to_frontdoor_benign_requests.jpg` | HTTP 200 and distinct application A/B responses |
-| 11 | `02_policy_attached_to_frontdoor_blocked_requests.jpg` | Controlled XSS HTTP 403 on both endpoints |
-| 12 | `02_policy_attached_to_frontdoor_managed_rule_logs.jpg` | Correlated rule Block for each profile |
-| 13 | `02_policy_attached_to_frontdoor_origin_protection.jpg` | Direct-origin timeouts and cross-FDID 403 |
-| 14 | `02_policy_attached_to_frontdoor_origin_access_logs.jpg` | Benign marker present; blocked marker absent on each VM |
+![Resources from both independent application delivery paths and the shared Front Door policy in the lab Resource Group.](02_policy_attached_to_frontdoor_resource_group_overview.jpg)
 
-Redact unrelated resources and identifiers where appropriate. Screenshots supplement actual command outputs and correlated diagnostics; they do not replace them.
+*Figure 2. Resources from both independent application delivery paths and the shared Front Door policy in the lab Resource Group.*
+
+![The shared Front Door policy is Enabled, runs in Prevention mode, uses Azure Front Door Premium and has two associations.](02_policy_attached_to_frontdoor_policy_overview.jpg)
+
+*Figure 3. The shared Front Door policy is Enabled, runs in Prevention mode, uses Azure Front Door Premium and has two associations.*
+
+![Microsoft_DefaultRuleSet 2.2 and individual rule states/actions. Some visible rules are Disabled; this screenshot alone neither proves every rule is enabled nor establishes runtime enforcement.](02_policy_attached_to_frontdoor_managed_rules.jpg)
+
+*Figure 4. Microsoft_DefaultRuleSet 2.2 and individual rule states/actions. Some visible rules are Disabled; this screenshot alone neither proves every rule is enabled nor establishes runtime enforcement.*
+
+![One Front Door policy is associated with both profiles and their separate default endpoints.](02_policy_attached_to_frontdoor_policy_associations.jpg)
+
+*Figure 5. One Front Door policy is associated with both profiles and their separate default endpoints.*
+
+![Profile A's security association references fkFrontDoorShared in Prevention mode and protects its enabled endpoint; provisioning reports Succeeded.](02_policy_attached_to_frontdoor_security_policy_a.jpg)
+
+*Figure 6. Profile A's security association references fkFrontDoorShared in Prevention mode and protects its enabled endpoint; provisioning reports Succeeded.*
+
+![Profile B independently references the same Front Door policy and protects its own enabled endpoint; provisioning reports Succeeded.](02_policy_attached_to_frontdoor_security_policy_b.jpg)
+
+*Figure 7. Profile B independently references the same Front Door policy and protects its own enabled endpoint; provisioning reports Succeeded.*
+
+![Profile A's origin group web references its own enabled Load Balancer origin at 40.113.113.25. The configured probe is HTTP HEAD /health every 30 seconds; this configuration view is not a probe-health result.](02_policy_attached_to_frontdoor_origins_a.jpg)
+
+*Figure 8. Profile A's origin group web references its own enabled Load Balancer origin at 40.113.113.25. The configured probe is HTTP HEAD /health every 30 seconds; this configuration view is not a probe-health result.*
+
+![Profile B's origin group web references the distinct enabled origin at 20.126.70.193 and uses the same HTTP HEAD /health probe configuration.](02_policy_attached_to_frontdoor_origins_b.jpg)
+
+*Figure 9. Profile B's origin group web references the distinct enabled origin at 20.126.70.193 and uses the same HTTP HEAD /health probe configuration.*
+
+![Separate backend subnets fk-shared-a-backend (10.60.1.0/24) and fk-shared-b-backend (10.60.2.0/24), each associated with its own NSG.](02_policy_attached_to_frontdoor_vnet_subnets.jpg)
+
+*Figure 10. Separate backend subnets fk-shared-a-backend (10.60.1.0/24) and fk-shared-b-backend (10.60.2.0/24), each associated with its own NSG.*
+
+![Application A's NSG permits AzureFrontDoor.Backend on TCP/80 and AzureLoadBalancer on TCP/8080, then denies other inbound traffic to its subnet.](02_policy_attached_to_frontdoor_a_nsg_rules.jpg)
+
+*Figure 11. Application A's NSG permits AzureFrontDoor.Backend on TCP/80 and AzureLoadBalancer on TCP/8080, then denies other inbound traffic to its subnet.*
+
+![Application B has the same restrictive inbound rules in its independent subnet NSG.](02_policy_attached_to_frontdoor_b_nsg_rules.jpg)
+
+*Figure 12. Application B has the same restrictive inbound rules in its independent subnet NSG.*
 
 ---
 
@@ -149,7 +152,126 @@ Static verification of the expanded lab passed on October 9, 2026 with OpenTofu 
 - `tofu init -backend=false -no-color`: passed; real pinned sibling modules downloaded
 - `tofu validate -no-color`: passed, including both Front Door module instances and their association contracts
 
-**No plan, apply or runtime test has been performed for this expanded example.** The following are acceptance tests, not claimed results.
+### Deployment record — October 9, 2026
+
+The lab was deployed with explicit approval using the subscription, Resource Group (`foggykitchen-rg`) and region (`westeurope`) from example 01's ignored local tfvars. Both endpoint names were changed for this independent lab. AzureRM 4.81.0 was used.
+
+```text
+Policy bootstrap:
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Full deployment:
+Apply complete! Resources: 46 added, 0 changed, 0 destroyed.
+```
+
+All 48 managed resources were created. Both security-policy associations report `Succeeded` and reference the same `fkFrontDoorShared` Front Door policy ID. The private VM addresses are `10.60.1.4` and `10.60.2.4`.
+
+The first HTTPS requests at approximately 11:07 UTC, and an initial test at 11:26 UTC, returned Front Door HTTP 404 with `CONFIG_NOCACHE` on both endpoints. Both `/health` endpoints returned 200 by 11:30:16 UTC, approximately 25 minutes after the full apply completed. No route, policy, NSG or origin configuration was changed to obtain this result. The exact transition time was not continuously observed.
+
+The post-deployment full plan, repeated after the runtime tests, completed with exit code 2: `0 to add, 2 to change, 0 to destroy`. Both differences concern only `log_analytics_destination_type`: the plan proposes restoring `AzureDiagnostics` on the two diagnostic settings. Read-back returns `null`, which [Azure Monitor documents as the default AzureDiagnostics destination](https://learn.microsoft.com/en-us/rest/api/monitor/diagnostic-settings/list?view=rest-monitor-2021-05-01-preview). The observed plan differences are consistent with API/provider normalization; they do not establish failed log delivery. This is not a clean/no-drift result, and no corrective apply has been performed. The sibling also emits its documented `metric` deprecation warning.
+
+### Runtime verification — October 9, 2026
+
+The final HTTP test requests were sent at 11:45:32 UTC with marker `shared-1791546331492`. Azure Run Command checked both VMs and their access logs between 11:45 and 11:47 UTC. Correlated managed-rule records for both profiles were confirmed by 11:47:18 UTC.
+
+| Check | Application A | Application B | Assessment |
+|---|---|---|---|
+| Shared Front Door policy attachment | `Succeeded`, active endpoint, `/*` | `Succeeded`, active endpoint, `/*` | Both reference `fkFrontDoorShared` |
+| Benign HTTPS request | 200; `nginx-shared-A-lab` | 200; `nginx-shared-B-lab` | Passed; distinct application responses |
+| Controlled XSS request | 403; no origin header | 403; no origin header | HTTP blocking observed on both; log correlation recorded separately |
+| Managed-rule correlation | 941100, 941110, 941160: `AnomalyScoring`; 949110: `Block` | Same | Passed; exact response tracking reference and profile matched on both |
+| Direct public origin access | curl exit 28, connection timeout | curl exit 28, connection timeout | Consistent with direct-origin restriction |
+| VM readiness | cloud-init done; NGINX active; configuration test successful | Same | Passed |
+| Own profile FDID on local listener | 200 | 200 | Passed |
+| Other profile FDID on local listener | 403 | 403 | Passed |
+| Missing FDID on local listener | 403 | 403 | Passed |
+| Local health listener on 8080 | 200 | 200 | Passed; not a standalone Azure LB probe-metrics test |
+| Origin marker correlation | benign count 1; XSS count 0 | benign count 1; XSS count 0 | Allowed request reached its VM; blocked request did not |
+| Diagnostic settings read-back | `allLogs` enabled; correct shared workspace | Same | Passed; ingestion can lag independently per profile |
+
+The blocked requests used these actual `X-Azure-Ref` values:
+
+```text
+A: 20261009T114532Z-r1d9499f5f8mk4kwhC1WAWepf00000000ung000000014cw7
+B: 20261009T114532Z-r1d9499f5f87fzbshC1WAWe1zg0000001fsg00000000h645
+```
+
+Selected actual HTTP and VM outputs:
+
+```text
+Application A:
+HTTP/2 200
+x-foggykitchen-origin: nginx-shared-A-lab
+FoggyKitchen application A search reached origin
+
+Application B:
+HTTP/2 200
+x-foggykitchen-origin: nginx-shared-B-lab
+FoggyKitchen application B search reached origin
+
+Controlled XSS: HTTP/2 403 on A and B; neither response included the origin header.
+Direct origins: curl exit 28 on 40.113.113.25 and 20.126.70.193.
+
+Both VMs, via Azure Run Command:
+status: done
+active
+own=200
+other=403
+missing=403
+probe=200
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+Both origin access logs:
+benign_count=1
+xss_count=0
+```
+
+The benign NGINX entries at `2026-10-09T11:45:32+00:00` contain `status=200`, the corresponding profile FDID and the same tracking reference as their benign HTTP response. The local wrong-FDID test proves NGINX's header guard; it is not a live route-switching test through the other profile. No inbound SSH or direct-origin exception was introduced.
+
+The first operational run at 11:30 confirmed HTTP blocking on both profiles, but only B's correlated records were observed during that monitoring window. The complete test was repeated with fresh markers at 11:45; both profiles' records were then confirmed without changing infrastructure or weakening ingress restrictions.
+
+The test screenshots below are browser screenshots of actual CLI outputs rendered locally, as in example 01. They are not Azure Portal or terminal-window screenshots. Azure Run Command JSON messages are decoded for readability; HTML error-page bodies are explicitly omitted. No expected response is substituted for an observed response.
+
+![Actual benign responses for both applications](02_policy_attached_to_frontdoor_benign_requests.jpg)
+
+*Figure 13. Both Front Door endpoints return HTTP 200 with distinct NGINX origin headers and application A/B response bodies.*
+
+![Actual controlled XSS responses](02_policy_attached_to_frontdoor_blocked_requests.jpg)
+
+*Figure 14. Controlled XSS requests return HTTP 403 on both endpoints without an NGINX origin header. The response tracking references are used for managed-rule log correlation.*
+
+![Actual direct-origin restrictions](02_policy_attached_to_frontdoor_direct_origin_tests.jpg)
+
+*Figure 15. Direct requests to both public origin IPs time out with curl exit 28; neither returns an application response.*
+
+![Actual VM readiness and FDID tests](02_policy_attached_to_frontdoor_fdid_tests.jpg)
+
+*Figure 16. Both VMs report completed cloud-init and a valid, active NGINX configuration. Each local application listener accepts its own profile FDID (200), rejects the other profile and missing FDID (403), and exposes a working local health listener on 8080 (200).*
+
+![Actual origin access-log checks](02_policy_attached_to_frontdoor_origin_access_logs.jpg)
+
+*Figure 17. Each NGINX access log contains its own benign marker once and no entry for its blocked XSS marker; the accepted request includes the expected profile FDID and tracking reference.*
+
+![Actual correlated managed-rule records for both profiles](02_policy_attached_to_frontdoor_managed_rule_logs.jpg)
+
+*Figure 18. Log Analytics records match each profile and the exact HTTP 403 tracking reference from Figure 14. Both profiles report three XSS anomaly-scoring matches followed by rule 949110 with action Block.*
+
+Actual records have `TimeGenerated=2026-10-09T11:45:32Z`. Each application's records carry its corresponding tracking reference shown above:
+
+| Profile | Rule | Action |
+|---|---|---|
+| fk-fd-shared-a-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941100 | AnomalyScoring |
+| fk-fd-shared-a-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941110 | AnomalyScoring |
+| fk-fd-shared-a-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941160 | AnomalyScoring |
+| fk-fd-shared-a-frontdoor | Microsoft_DefaultRuleSet-2.2-BLOCKING-EVALUATION-949110 | Block |
+| fk-fd-shared-b-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941100 | AnomalyScoring |
+| fk-fd-shared-b-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941110 | AnomalyScoring |
+| fk-fd-shared-b-frontdoor | Microsoft_DefaultRuleSet-2.2-XSS-941160 | AnomalyScoring |
+| fk-fd-shared-b-frontdoor | Microsoft_DefaultRuleSet-2.2-BLOCKING-EVALUATION-949110 | Block |
+
+### Reproduction procedure
+
+The following commands reproduce the checks; their expected results are separate from the observed record above.
 
 ### 1. Verify the shared attachment
 
@@ -248,6 +370,22 @@ Require a benign-marker entry on its own VM, no blocked-marker entry, matching F
 ---
 
 ## 🧹 Cleanup
+
+The deployed lab was destroyed with explicit approval on October 9, 2026. Actual final output and verification:
+
+```text
+Destroy complete! Resources: 48 destroyed.
+
+$ tofu state list
+(no output; empty state)
+
+$ az group exists --name foggykitchen-rg --subscription 9f064c73-bcb5-4f96-8422-d492d4facb39 -o json
+false
+```
+
+Both Front Door profiles were removed before the shared Front Door policy. Profile deletion took 14m1s for A and 15m26s for B; Resource Group deletion then completed successfully. Screenshots and runtime evidence above describe the now-removed deployment. Recreate the infrastructure to repeat live tests.
+
+For subsequent deployments:
 
 ```bash
 tofu destroy
