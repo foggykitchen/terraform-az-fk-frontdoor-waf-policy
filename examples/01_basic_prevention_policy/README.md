@@ -65,9 +65,12 @@ Set your subscription ID and a globally unique endpoint name. Authenticate exter
 For a separately authorized deployment:
 
 ```bash
+tofu apply -target=module.frontdoor_policy
 tofu plan
 tofu apply
 ```
+
+The pinned Front Door v0.1.0 module calculates its association resource count from the policy ID. On a fresh deployment that ID is unknown, causing `Invalid count argument`. The one-time targeted policy bootstrap above resolves this; always follow it with a full apply. Targeting is an exceptional workaround, not the normal workflow for subsequent changes.
 
 Allow time for Front Door propagation, cloud-init and origin health checks. The generated SSH private key is stored in Terraform state: protect state and use this key only for a disposable lab. No private key is committed or exposed as an output.
 
@@ -104,7 +107,7 @@ Static verification on October 9, 2026 with OpenTofu 1.11.6 and AzureRM 4.81.0:
 - `tofu init -backend=false -no-color`: passed, including pinned sibling modules
 - `tofu validate -no-color`: passed for the complete composition
 
-No plan, apply, HTTP test or screenshot collection has been performed. Static validation does not prove Azure deployment or runtime enforcement.
+Deployment was performed on October 9, 2026 with explicit approval: the policy bootstrap added 2 resources, then the full apply added 26 resources, with no changes or deletions. Azure accepted DRS 2.2 and created the Front Door association. The pinned sibling emitted a deprecation warning for its diagnostic `metric` block. Initial HTTPS health checks returned Front Door HTTP 404; application reachability and security enforcement are not yet verified. No screenshots have been collected.
 
 After deployment:
 
