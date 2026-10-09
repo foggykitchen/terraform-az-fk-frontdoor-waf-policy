@@ -78,24 +78,47 @@ Allow time for Front Door propagation, cloud-init and origin health checks. The 
 
 ## 🖼️ Azure Portal View
 
-Screenshots are planned evidence, not existing results. Collect them after deployment and redact subscription IDs and unrelated data.
+The following Azure Portal screenshots were captured from the deployed lab. Captions describe the visible evidence, not additional checks inferred from the filenames. Subscription IDs are masked in overview images; account identity remains visible in the portal header and should be reviewed before public publication.
 
-| Planned screenshot | Evidence |
-|---|---|
-| `01_prevention_resource_group_overview.jpg` | Complete lab resources |
-| `01_prevention_frontdoor_overview.jpg` | Premium profile and endpoint |
-| `01_prevention_policy_overview.jpg` | Enabled Front Door policy, Prevention mode |
-| `01_prevention_managed_rules.jpg` | Microsoft_DefaultRuleSet 2.2, Block action |
-| `01_prevention_security_association.jpg` | Endpoint association and `/*` |
-| `01_prevention_load_balancer.jpg` | Frontend, backend pool, port 80 rule and healthy port 8080 probe |
-| `01_prevention_backend_network.jpg` | Private VM, NSG rules and NAT Gateway association |
-| `01_prevention_diagnostic_settings.jpg` | Front Door logs sent to the lab workspace |
-| `01_prevention_benign_request.jpg` | Successful HTTPS request and origin response header |
-| `01_prevention_blocked_request.jpg` | Controlled request blocked at Front Door |
-| `01_prevention_security_logs.jpg` | Matching block, URI and tracking reference |
-| `01_prevention_origin_bypass.jpg` | Direct origin access denied |
+![Lab resources](01_basic_prevention_resource_group_overview.jpg)
 
-Add image links and captions only after capturing the actual files.
+*Figure 2. Resources in the lab Resource Group, including the separate Front Door policy, profile, private backend and networking.*
+
+![Front Door Premium overview](01_basic_prevention_frontdoor_overview.jpg)
+
+*Figure 3. Active Front Door Premium profile, enabled endpoint and successfully provisioned security policy.*
+
+![Front Door policy and endpoint association](01_basic_prevention_policy_overview.jpg)
+
+*Figure 4. The Front Door security-policy hierarchy shows the Prevention policy associated with an enabled endpoint.*
+
+![Front Door managed rules](01_basic_prevention_managed_rules.jpg)
+
+*Figure 5. Microsoft_DefaultRuleSet 2.2 and individual rule states/actions. Some visible rules are Disabled; this image does not establish that every rule is enabled or prove runtime enforcement.*
+
+![Front Door origin group and route](01_basic_prevention_security_association.jpg)
+
+*Figure 6. Origin group `web` is associated with the endpoint and route `default`. Despite its filename, this is an origin-group view, not the Front Door policy-association details.*
+
+![Load Balancer frontend](01_basic_prevention_load_balancer_frontend.jpg)
+
+*Figure 7. Public Load Balancer frontend and one configured rule.*
+
+![Load Balancer backend](01_basic_prevention_load_balancer_backend.jpg)
+
+*Figure 8. Backend pool `nginx` contains the running VM at private IP `10.50.1.4`. VM Running status does not establish health-probe success.*
+
+![Private backend and subnet NSG](01_basic_prevention_backend_network.jpg)
+
+*Figure 9. The VM has no public IP. The subnet NSG permits Front Door on port 80 and Azure Load Balancer probes on port 8080, then denies other inbound traffic.*
+
+![NAT Gateway](01_basic_prevention_nat_gateway.jpg)
+
+*Figure 10. Standard NAT Gateway associated with one subnet and one public IP.*
+
+![Log Analytics workspace](01_basic_prevention_diagnostic_settings.jpg)
+
+*Figure 11. Active lab Log Analytics workspace. Despite its filename, this is a workspace overview, not a diagnostic-settings view proving log-category routing.*
 
 ---
 
@@ -107,9 +130,44 @@ Static verification on October 9, 2026 with OpenTofu 1.11.6 and AzureRM 4.81.0:
 - `tofu init -backend=false -no-color`: passed, including pinned sibling modules
 - `tofu validate -no-color`: passed for the complete composition
 
-Deployment was performed on October 9, 2026 with explicit approval: the policy bootstrap added 2 resources, then the full apply added 26 resources, with no changes or deletions. Azure accepted DRS 2.2 and created the Front Door association. The pinned sibling emitted a deprecation warning for its diagnostic `metric` block. Initial HTTPS health checks returned Front Door HTTP 404; application reachability and security enforcement are not yet verified. No screenshots have been collected.
+Deployment was performed on October 9, 2026 with explicit approval: the policy bootstrap added 2 resources, then the full apply added 26 resources, with no changes or deletions. Azure accepted DRS 2.2 and created the Front Door association. The pinned sibling emitted a deprecation warning for its diagnostic `metric` block.
 
-After deployment:
+Runtime checks on October 9, 2026 at approximately 09:26 UTC produced the following actual results. The PNG images below are browser screenshots of captured, unmodified CLI command output rendered locally for readability; they are not Azure Portal or terminal-window screenshots. HTML error-page bodies are omitted explicitly. No expected result was substituted for an observed result.
+
+| Check | Observed result | Assessment |
+|---|---|---|
+| Benign HTTPS request | Front Door HTTP 404, `CONFIG_NOCACHE`, no origin response header | Failed: expected application HTTP 200 |
+| Controlled XSS request | Front Door HTTP 404, not 403 | Managed-rule blocking not demonstrated |
+| Direct public origin access | Connection timeout, curl exit 28 | Consistent with the configured direct-access restriction |
+| Managed-rule log correlation | No matching rows | No evidence of an XSS block; ingestion can be delayed |
+| VM readiness | cloud-init done; `nginx -t` successful | Passed |
+| Origin without profile header | HTTP 403 | Passed |
+| Origin with correct profile header | HTTP 200 | Passed |
+| Local health listener on port 8080 | HTTP 200 | Passed; does not itself prove Azure Load Balancer probe metrics |
+
+The route read-back showed `enabledState: Enabled`, `linkToDefaultDomain: Enabled`, `/*`, and `provisioningState: Succeeded`, but `deploymentStatus: NotStarted`. This is a control-plane observation, not proof of the root cause of HTTP 404. The end-to-end Prevention scenario remains incomplete; no policy, NSG or route was weakened to make a test pass.
+
+![Actual benign request result](01_basic_prevention_benign_request.png)
+
+*Figure 12. Benign request returns HTTP 404 from Front Door rather than application HTTP 200.*
+
+![Actual controlled XSS result](01_basic_prevention_blocked_request.png)
+
+*Figure 13. Controlled XSS-like request also returns HTTP 404. Despite the filename, this is not evidence of a managed Front Door rule block.*
+
+![Actual direct origin bypass attempt](01_basic_prevention_origin_bypass.png)
+
+*Figure 14. Direct access to the public origin times out without an HTTP response.*
+
+![Actual managed-rule log query](01_basic_prevention_security_logs.png)
+
+*Figure 15. The correlation query returns no matching rows; a managed-rule block has not been confirmed.*
+
+![Actual origin header and readiness checks](01_basic_prevention_origin_header_checks.png)
+
+*Figure 16. Azure Run Command confirms NGINX readiness, profile-header enforcement (403/200), and a working local health listener (200).*
+
+Reproduction procedure and expected results (not all achieved above):
 
 1. Confirm cloud-init completed, NGINX is running and both health probes are healthy. Use Azure Run Command rather than opening inbound SSH.
 2. Test the benign path:
@@ -139,8 +197,12 @@ After deployment:
    AzureDiagnostics
    | where TimeGenerated > ago(1h)
    | where Category == "FrontDoorWebApplicationFirewallLog"
-   | where requestUri_s contains "prevention-xss"
-   | project TimeGenerated, action_s, ruleName_s, requestUri_s, trackingReference_s
+   | extend requestUri=tostring(column_ifexists('requestUri_s', '')),
+       action=tostring(column_ifexists('action_s', '')),
+       ruleName=tostring(column_ifexists('ruleName_s', '')),
+       trackingReference=tostring(column_ifexists('trackingReference_s', ''))
+   | where requestUri contains "prevention-xss"
+   | project TimeGenerated, action, ruleName, requestUri, trackingReference
    | order by TimeGenerated desc
    ```
 
