@@ -132,28 +132,31 @@ Static verification on October 9, 2026 with OpenTofu 1.11.6 and AzureRM 4.81.0:
 
 Deployment was performed on October 9, 2026 with explicit approval: the policy bootstrap added 2 resources, then the full apply added 26 resources, with no changes or deletions. Azure accepted DRS 2.2 and created the Front Door association. The pinned sibling emitted a deprecation warning for its diagnostic `metric` block.
 
-Runtime checks on October 9, 2026 at approximately 09:26 UTC produced the following actual results. The PNG images below are browser screenshots of captured, unmodified CLI command output rendered locally for readability; they are not Azure Portal or terminal-window screenshots. HTML error-page bodies are omitted explicitly. No expected result was substituted for an observed result.
+Runtime checks were repeated on October 9, 2026 at approximately 09:33 UTC after the endpoint became operational. The PNG images below are browser screenshots of captured, unmodified CLI command output rendered locally for readability; they are not Azure Portal or terminal-window screenshots. HTML error-page bodies are omitted explicitly. No expected result was substituted for an observed result.
 
 | Check | Observed result | Assessment |
 |---|---|---|
-| Benign HTTPS request | Front Door HTTP 404, `CONFIG_NOCACHE`, no origin response header | Failed: expected application HTTP 200 |
-| Controlled XSS request | Front Door HTTP 404, not 403 | Managed-rule blocking not demonstrated |
+| Benign HTTPS request | HTTP 200, `X-FoggyKitchen-Origin: nginx-prevention-lab`, expected application response | Passed |
+| Controlled XSS request | HTTP 403, no origin response header | Passed; managed-rule block confirmed in diagnostics |
 | Direct public origin access | Connection timeout, curl exit 28 | Consistent with the configured direct-access restriction |
-| Managed-rule log correlation | No matching rows | No evidence of an XSS block; ingestion can be delayed |
+| Managed-rule log correlation | XSS rules 941100, 941110, 941160 matched; blocking evaluation 949110 logged `Block` with the same tracking reference as HTTP 403 | Passed |
 | VM readiness | cloud-init done; `nginx -t` successful | Passed |
 | Origin without profile header | HTTP 403 | Passed |
 | Origin with correct profile header | HTTP 200 | Passed |
 | Local health listener on port 8080 | HTTP 200 | Passed; does not itself prove Azure Load Balancer probe metrics |
+| Origin access-log correlation | Benign marker count 1; XSS marker count 0 | Benign request reached NGINX; blocked request did not |
 
-The route read-back showed `enabledState: Enabled`, `linkToDefaultDomain: Enabled`, `/*`, and `provisioningState: Succeeded`, but `deploymentStatus: NotStarted`. This is a control-plane observation, not proof of the root cause of HTTP 404. The end-to-end Prevention scenario remains incomplete; no policy, NSG or route was weakened to make a test pass.
+Initial requests returned Front Door HTTP 404. They began returning the expected 200/403 without any configuration changes. This is consistent with global configuration propagation: [Microsoft documents](https://learn.microsoft.com/en-us/azure/frontdoor/front-door-faq#what-is-the-estimated-time-for-deploying-an-azure-front-door-does-my-front-door-remain-operational-during-the-update-process) approximately 30 minutes for back-to-back updates. The API still reported `deploymentStatus: NotStarted` while the endpoint was demonstrably serving traffic, so that field alone was not a reliable readiness indicator in this deployment. No policy, NSG or route was weakened to make a test pass.
+
+The test request marker was `prevention-1791538394265-xss`. Its HTTP 403 response and all four managed-rule records shared tracking reference `20261009T093314Z-r1d9499f5f8r5srzhC1WAWzgdn0000001f7g000000002q05`. The individual XSS matches used `AnomalyScoring`; the blocking-evaluation rule `Microsoft_DefaultRuleSet-2.2-BLOCKING-EVALUATION-949110` recorded `Block`. Logs became available after an ingestion delay, so an initially empty query was not treated as a failed diagnostic configuration. Read-back confirmed `allLogs` enabled and the correct workspace destination.
 
 ![Actual benign request result](01_basic_prevention_benign_request.png)
 
-*Figure 12. Benign request returns HTTP 404 from Front Door rather than application HTTP 200.*
+*Figure 12. Benign HTTPS request returns application HTTP 200, the expected response body and the NGINX origin header.*
 
 ![Actual controlled XSS result](01_basic_prevention_blocked_request.png)
 
-*Figure 13. Controlled XSS-like request also returns HTTP 404. Despite the filename, this is not evidence of a managed Front Door rule block.*
+*Figure 13. Controlled XSS-like request returns HTTP 403 without the NGINX origin header. The response tracking reference is used for managed-rule log correlation.*
 
 ![Actual direct origin bypass attempt](01_basic_prevention_origin_bypass.png)
 
@@ -161,13 +164,13 @@ The route read-back showed `enabledState: Enabled`, `linkToDefaultDomain: Enable
 
 ![Actual managed-rule log query](01_basic_prevention_security_logs.png)
 
-*Figure 15. The correlation query returns no matching rows; a managed-rule block has not been confirmed.*
+*Figure 15. Three DRS 2.2 XSS matches and the final blocking-evaluation `Block` share the tracking reference from the HTTP 403 response, confirming managed Front Door enforcement.*
 
 ![Actual origin header and readiness checks](01_basic_prevention_origin_header_checks.png)
 
 *Figure 16. Azure Run Command confirms NGINX readiness, profile-header enforcement (403/200), and a working local health listener (200).*
 
-Reproduction procedure and expected results (not all achieved above):
+Reproduction procedure and expected results:
 
 1. Confirm cloud-init completed, NGINX is running and both health probes are healthy. Use Azure Run Command rather than opening inbound SSH.
 2. Test the benign path:

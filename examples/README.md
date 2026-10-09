@@ -51,7 +51,7 @@ tofu apply
 The recommended learning sequence is:
 01 → 02 → 03
 
-All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. Example 01 was subsequently deployed with explicit approval (28 resources added across a policy bootstrap and full apply). Initial health requests returned Front Door HTTP 404; runtime enforcement remains unverified. Examples 02 and 03 have not been deployed. Screenshot checklists describe evidence still to collect.
+All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. Example 01 was subsequently deployed with explicit approval (28 resources added across a policy bootstrap and full apply). After initial Front Door propagation, runtime tests confirmed benign HTTP 200, controlled XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and test evidence. Examples 02 and 03 have not been deployed.
 
 Example 01 includes its attachment and real backend, providing a complete path for future HTTP enforcement tests. Example 03 currently creates only a Front Door policy and requires an external attachment for traffic testing. Example 02 creates its attachment through the pinned sibling module but uses an external origin.
 
