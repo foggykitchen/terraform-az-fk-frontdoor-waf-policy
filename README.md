@@ -121,7 +121,7 @@ terraform-az-fk-frontdoor-waf-policy/
 └── README.md
 ```
 
-Example 01 splits infrastructure into responsibility-specific files, following the Front Door sibling convention. Examples 02 and 03 currently retain their smaller `main.tf` configurations. All examples include `providers.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`, and `README.md`. Root inputs follow the sibling convention of `inputs.tf`; example inputs live in `variables.tf`. Documentation includes architecture diagrams, screenshot checklists, validation results and cleanup steps.
+Examples 01 and 02 split infrastructure into responsibility-specific files, following the Front Door sibling convention. Example 03 currently retains its smaller `main.tf` configuration. All examples include `providers.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`, and `README.md`. Root inputs follow the sibling convention of `inputs.tf`; example inputs live in `variables.tf`. Documentation includes architecture diagrams, screenshot checklists, validation results and cleanup steps.
 
 ---
 
@@ -239,10 +239,10 @@ custom_rules = list(object({
 ## 🧭 Examples
 
 - `01_basic_prevention_policy`: complete Premium Prevention lab using DRS 2.2 Block, private NGINX backend, protected public load balancer, NAT Gateway and diagnostics
-- `02_policy_attached_to_frontdoor`: policy-ID composition with the pinned Front Door v0.1.0 module, Premium SKU and sibling-owned security association
+- `02_policy_attached_to_frontdoor`: one shared Prevention policy attached to two Premium profiles, with independent private NGINX backends, protected public Load Balancers and shared diagnostics
 - `03_detection_mode_with_custom_rules`: Detection tuning with an admin IP boundary, login rate limit, managed override and scoped exclusion
 
-See [examples/README.md](examples/README.md). Example 01 creates its Resource Group and complete application path through pinned sibling modules. Examples 02 and 03 currently use an existing Resource Group; example 02 references an existing public origin. All three examples passed fmt/init/validate with AzureRM 4.81.0 on 2026-10-09; expanded example 01 was initialized and validated again. Both original Front Door examples also passed validation in an isolated checkout. Example 01 was subsequently deployed with explicit approval: 28 resources added across a policy bootstrap and full apply. After initial Front Door propagation, runtime tests confirmed benign HTTP 200, XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and results. The lab was then destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Examples 02 and 03 have not been deployed.
+See [examples/README.md](examples/README.md). Examples 01 and 02 create dedicated Resource Groups and complete application paths through pinned sibling modules. Example 03 currently uses an existing Resource Group. All three examples passed fmt/init/validate with AzureRM 4.81.0 on 2026-10-09; the expanded examples were initialized and validated again. Both original Front Door examples also passed validation in an isolated checkout during initial module verification. Example 01 was subsequently deployed with explicit approval: 28 resources added across a policy bootstrap and full apply. After initial Front Door propagation, runtime tests confirmed benign HTTP 200, XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and results. The lab was then destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Examples 02 and 03 have not been deployed. Both complete labs document the one-time policy bootstrap needed by Front Door v0.1.0; static validation alone does not prove the first full plan can resolve its association count.
 
 ---
 

@@ -1,7 +1,7 @@
 # Azure Front Door Web Application Firewall Policies with Terraform/OpenTofu – Training Examples
 
 This directory contains all progressive examples used with the **terraform-az-fk-frontdoor-waf-policy** module.
-Example 01 is a complete **Prevention mini-architecture** with its own application and diagnostics. Examples 02 and 03 currently demonstrate narrower composition and tuning contracts; their expansion into complete labs is a later step.
+Example 01 is a complete **Prevention mini-architecture** with its own application and diagnostics. Example 02 extends this into **two independent applications sharing one Front Door policy**. Example 03 currently demonstrates a narrower tuning contract; its expansion into a complete lab is a later step.
 
 These examples are part of the **[FoggyKitchen.com training ecosystem](https://foggykitchen.com/courses)** and are intended for Azure courses focused on independently governed Front Door application security.
 
@@ -12,7 +12,7 @@ These examples are part of the **[FoggyKitchen.com training ecosystem](https://f
 | Example | Title | Key Topics |
 |:-------:|:------|:-----------|
 | [01](01_basic_prevention_policy) | **Prevention Mini-Architecture** | Front Door Premium, DRS 2.2 Block, NGINX backend, origin protection, NAT Gateway and diagnostics |
-| [02](02_policy_attached_to_frontdoor) | **Policy Attached to Front Door** | Front Door v0.1.0 composition, matching Premium SKU, policy-ID attachment, sibling-owned security association |
+| [02](02_policy_attached_to_frontdoor) | **One Policy, Two Applications** | Two Premium profiles, one shared Front Door policy, separate private NGINX backends and origin trust boundaries, shared diagnostics |
 | [03](03_detection_mode_with_custom_rules) | **Detection Mode with Custom Rules** | Admin-path IP boundary, native login rate limit, managed-rule override, rule-scoped exclusion, tuning before enforcement |
 
 Each example builds on the **concepts** introduced in the previous one, but can be applied independently for learning and experimentation.
@@ -39,7 +39,7 @@ tofu init
 tofu validate
 ```
 
-Example 01 creates a dedicated Resource Group, network and NGINX application. Replace the illustrative subscription ID and choose a globally unique endpoint name. Azure authentication is supplied externally. Examples 02 and 03 currently need an existing Resource Group; example 02 additionally needs an existing publicly reachable HTTPS origin.
+Examples 01 and 02 create dedicated Resource Groups, networks and NGINX applications. Replace the illustrative subscription ID and choose globally unique endpoint names (two in example 02). Azure authentication is supplied externally. Example 03 currently needs an existing Resource Group. Examples 01 and 02 document the one-time policy bootstrap required by the pinned Front Door v0.1.0 association count.
 
 For a later deployment, review the configuration and costs before running:
 
@@ -53,7 +53,7 @@ The recommended learning sequence is:
 
 All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. Example 01 was subsequently deployed with explicit approval (28 resources added across a policy bootstrap and full apply). After initial Front Door propagation, runtime tests confirmed benign HTTP 200, controlled XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and test evidence. The lab was then destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Examples 02 and 03 have not been deployed.
 
-Example 01 includes its attachment and real backend, providing a complete path for future HTTP enforcement tests. Example 03 currently creates only a Front Door policy and requires an external attachment for traffic testing. Example 02 creates its attachment through the pinned sibling module but uses an external origin.
+Examples 01 and 02 include their attachments and real backends. Example 02 provides acceptance tests for enforcement on both applications, shared policy-ID associations, direct-origin restrictions and cross-profile identifier rejection. These runtime tests have not yet been executed. Example 03 currently creates only a Front Door policy and requires an external attachment for traffic testing.
 
 ---
 
@@ -62,7 +62,7 @@ Example 01 includes its attachment and real backend, providing a complete path f
 - One example = one architectural goal
 - Front Door security policy governance is independent of profile lifecycle
 - The root module creates one Front Door policy; the consuming sibling owns delivery and attachment
-- Example 01 owns an isolated lab environment; remaining examples document their external dependencies
+- Examples 01 and 02 each own isolated lab environments; example 03 documents its external dependencies
 - No secrets or subscription-specific values in source control
 - Static validation is not represented as successful runtime deployment
 
