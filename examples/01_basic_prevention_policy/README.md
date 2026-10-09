@@ -235,6 +235,14 @@ tofu destroy
 
 This removes the lab Resource Group and its managed resources, including the association and policy. Do not reuse this lab's policy for external consumers without reviewing lifecycle coupling.
 
+Cleanup was executed on October 9, 2026 after runtime verification and evidence collection:
+
+```text
+Destroy complete! Resources: 28 destroyed.
+```
+
+Post-cleanup verification: `tofu state list` returned no resources and `az group exists --name foggykitchen-rg` returned `false`. Front Door profile deletion took 15 minutes 31 seconds; the operation was allowed to finish without a concurrent manual delete. The screenshots above are retained evidence from the completed deployment, not currently running resources. Recreate the lab from its configuration to repeat the tests.
+
 ---
 
 ## 🪪 License
