@@ -1,0 +1,45 @@
+#cloud-config
+package_update: true
+packages:
+  - nginx
+
+write_files:
+  - path: /etc/nginx/sites-available/default
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Front Door's service tag is shared; bind application access to this profile.
+      map $http_x_azure_fdid $approved_frontdoor {
+        default 0;
+        "${frontdoor_id}" 1;
+      }
+
+      log_format lab '$time_iso8601 $request status=$status fdid=$http_x_azure_fdid tracking=$http_x_azure_ref';
+      server {
+        listen 80 default_server;
+        server_name _;
+        default_type text/plain;
+        access_log /var/log/nginx/lab-access.log lab;
+        add_header X-FoggyKitchen-Origin "nginx-prevention-lab" always;
+        if ($approved_frontdoor = 0) { return 403; }
+
+        location = /health { return 200 "healthy\n"; }
+        location = /search { return 200 "FoggyKitchen search endpoint reached origin\n"; }
+        location / { return 200 "FoggyKitchen Front Door Prevention lab\nPath: Front Door Premium - Load Balancer - private NGINX\n"; }
+      }
+
+      # Azure Load Balancer probes carry no Front Door identifier.
+      # NSG permits this listener only from AzureLoadBalancer; no LB rule exposes it.
+      server {
+        listen 8080;
+        server_name _;
+        default_type text/plain;
+        access_log off;
+        location = /health { return 200 "healthy\n"; }
+        location / { return 404; }
+      }
+
+runcmd:
+  - nginx -t
+  - systemctl enable nginx
+  - systemctl restart nginx

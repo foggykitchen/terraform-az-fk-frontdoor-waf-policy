@@ -1,4 +1,10 @@
-# Illustrative values only; replace the subscription ID and existing Resource Group.
+# Illustrative subscription ID only. This lab creates its own dedicated Resource Group.
 subscription_id     = "00000000-0000-0000-0000-000000000000"
-resource_group_name = "fk-security-rg"
+resource_group_name = "fk-frontdoor-prevention-rg"
+name_prefix         = "fk-fd-prevention"
 policy_name         = "fkFrontDoorPrevention"
+endpoint_name       = "replace-with-globally-unique-endpoint"
+location            = "westeurope"
+vnet_address_space  = "10.50.0.0/16"
+backend_subnet_prefix = "10.50.1.0/24"
+vm_size             = "Standard_B1s"

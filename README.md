@@ -121,7 +121,7 @@ terraform-az-fk-frontdoor-waf-policy/
 └── README.md
 ```
 
-Each example contains `main.tf`, `providers.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`, and `README.md`. Root inputs follow the sibling convention of `inputs.tf`; example inputs live in `variables.tf`. Example documentation includes architecture diagrams, Azure Portal evidence checklists, validation results and cleanup steps.
+Example 01 splits infrastructure into responsibility-specific files, following the Front Door sibling convention. Examples 02 and 03 currently retain their smaller `main.tf` configurations. All examples include `providers.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`, and `README.md`. Root inputs follow the sibling convention of `inputs.tf`; example inputs live in `variables.tf`. Documentation includes architecture diagrams, screenshot checklists, validation results and cleanup steps.
 
 ---
 
@@ -238,11 +238,11 @@ custom_rules = list(object({
 
 ## 🧭 Examples
 
-- `01_basic_prevention_policy`: minimal Premium Prevention policy using DRS 2.2 with Block action
+- `01_basic_prevention_policy`: complete Premium Prevention lab using DRS 2.2 Block, private NGINX backend, protected public load balancer, NAT Gateway and diagnostics
 - `02_policy_attached_to_frontdoor`: policy-ID composition with the pinned Front Door v0.1.0 module, Premium SKU and sibling-owned security association
 - `03_detection_mode_with_custom_rules`: Detection tuning with an admin IP boundary, login rate limit, managed override and scoped exclusion
 
-See [examples/README.md](examples/README.md). Examples use an existing Resource Group. Example 02 also creates Front Door delivery resources through the sibling and references an existing public origin. All three examples passed fmt/init/validate with AzureRM 4.81.0 on 2026-10-09. Both original Front Door examples also passed validation in an isolated checkout. No plan, apply, deployed traffic or real-subscription check was performed. Each example documents the evidence to collect during future deployment testing.
+See [examples/README.md](examples/README.md). Example 01 creates its Resource Group and complete application path through pinned sibling modules. Examples 02 and 03 currently use an existing Resource Group; example 02 references an existing public origin. All three examples passed fmt/init/validate with AzureRM 4.81.0 on 2026-10-09; expanded example 01 was initialized and validated again. Both original Front Door examples also passed validation in an isolated checkout. No plan, apply, deployed traffic or real-subscription check was performed. Each example documents evidence to collect during future deployment testing.
 
 ---
 

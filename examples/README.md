@@ -1,7 +1,7 @@
 # Azure Front Door Web Application Firewall Policies with Terraform/OpenTofu – Training Examples
 
 This directory contains all progressive examples used with the **terraform-az-fk-frontdoor-waf-policy** module.
-The examples are designed as **incremental building blocks**, starting from a standalone Prevention policy, then attaching it to Front Door Premium, and finally introducing Detection-mode tuning.
+Example 01 is a complete **Prevention mini-architecture** with its own application and diagnostics. Examples 02 and 03 currently demonstrate narrower composition and tuning contracts; their expansion into complete labs is a later step.
 
 These examples are part of the **[FoggyKitchen.com training ecosystem](https://foggykitchen.com/courses)** and are intended for Azure courses focused on independently governed Front Door application security.
 
@@ -11,7 +11,7 @@ These examples are part of the **[FoggyKitchen.com training ecosystem](https://f
 
 | Example | Title | Key Topics |
 |:-------:|:------|:-----------|
-| [01](01_basic_prevention_policy) | **Basic Prevention Policy** | Standalone Front Door Premium policy, Microsoft DRS 2.2, Prevention mode, policy-ID output |
+| [01](01_basic_prevention_policy) | **Prevention Mini-Architecture** | Front Door Premium, DRS 2.2 Block, NGINX backend, origin protection, NAT Gateway and diagnostics |
 | [02](02_policy_attached_to_frontdoor) | **Policy Attached to Front Door** | Front Door v0.1.0 composition, matching Premium SKU, policy-ID attachment, sibling-owned security association |
 | [03](03_detection_mode_with_custom_rules) | **Detection Mode with Custom Rules** | Admin-path IP boundary, native login rate limit, managed-rule override, rule-scoped exclusion, tuning before enforcement |
 
@@ -39,7 +39,7 @@ tofu init
 tofu validate
 ```
 
-Provide an existing Resource Group and replace the illustrative subscription ID. Azure authentication is supplied externally. Example 02 additionally needs an existing publicly reachable HTTPS origin and a globally unique endpoint name.
+Example 01 creates a dedicated Resource Group, network and NGINX application. Replace the illustrative subscription ID and choose a globally unique endpoint name. Azure authentication is supplied externally. Examples 02 and 03 currently need an existing Resource Group; example 02 additionally needs an existing publicly reachable HTTPS origin.
 
 For a later deployment, review the configuration and costs before running:
 
@@ -53,7 +53,7 @@ The recommended learning sequence is:
 
 All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. **None has been deployed or traffic-tested.** The diagram describes the configured architecture; screenshot checklists describe evidence to collect after a future deployment.
 
-Examples 01 and 03 create only a Front Door policy. Their deployments can verify Azure configuration, but traffic tests require a separately managed Front Door attachment. Example 02 creates that attachment through the pinned sibling module.
+Example 01 includes its attachment and real backend, providing a complete path for future HTTP enforcement tests. Example 03 currently creates only a Front Door policy and requires an external attachment for traffic testing. Example 02 creates its attachment through the pinned sibling module but uses an external origin.
 
 ---
 
@@ -62,7 +62,7 @@ Examples 01 and 03 create only a Front Door policy. Their deployments can verify
 - One example = one architectural goal
 - Front Door security policy governance is independent of profile lifecycle
 - The root module creates one Front Door policy; the consuming sibling owns delivery and attachment
-- Resource Groups and origin applications remain explicit external dependencies
+- Example 01 owns an isolated lab environment; remaining examples document their external dependencies
 - No secrets or subscription-specific values in source control
 - Static validation is not represented as successful runtime deployment
 
@@ -72,7 +72,6 @@ These examples intentionally avoid:
 - Hidden dependencies between examples
 - Creating Front Door delivery or attachment resources inside the root policy module
 - Creating Application Gateway policies or Azure Firewall resources
-- Creating Log Analytics workspaces or origin infrastructure
 
 ---
 
