@@ -2,11 +2,11 @@ module "frontdoor_policy" {
   source = "../.."
 
   name                = var.policy_name
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.foggykitchen_rg.name
   sku_name            = "Premium_AzureFrontDoor"
   tags                = var.tags
 
-  policy_settings = { mode = "Detection" }
+  policy_settings = { mode = var.policy_mode }
 
   managed_rule_sets = [{
     type    = "Microsoft_DefaultRuleSet"
@@ -53,8 +53,8 @@ module "frontdoor_policy" {
       priority                       = 20
       type                           = "RateLimitRule"
       action                         = "Block"
-      rate_limit_duration_in_minutes = 5
-      rate_limit_threshold           = 200
+      rate_limit_duration_in_minutes = var.login_rate_duration_minutes
+      rate_limit_threshold           = var.login_rate_threshold
       match_conditions = [{
         match_variable = "RequestUri"
         operator       = "Contains"

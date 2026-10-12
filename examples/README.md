@@ -1,7 +1,7 @@
 # Azure Front Door Web Application Firewall Policies with Terraform/OpenTofu – Training Examples
 
 This directory contains all progressive examples used with the **terraform-az-fk-frontdoor-waf-policy** module.
-Example 01 is a complete **Prevention mini-architecture** with its own application and diagnostics. Example 02 extends this into **two independent applications sharing one Front Door policy**. Example 03 currently demonstrates a narrower tuning contract; its expansion into a complete lab is a later step.
+Example 01 is a complete **Prevention mini-architecture** with its own application and diagnostics. Example 02 extends this into **two independent applications sharing one Front Door policy**. Example 03 is a complete **Detection tuning lab** based on example 01, with custom rules, native login rate limiting, a managed-rule override and a scoped exclusion.
 
 These examples are part of the **[FoggyKitchen.com training ecosystem](https://foggykitchen.com/courses)** and are intended for Azure courses focused on independently governed Front Door application security.
 
@@ -39,7 +39,7 @@ tofu init
 tofu validate
 ```
 
-Examples 01 and 02 create dedicated Resource Groups, networks and NGINX applications. Replace the illustrative subscription ID and choose globally unique endpoint names (two in example 02). Azure authentication is supplied externally. Example 03 currently needs an existing Resource Group. Examples 01 and 02 document the one-time policy bootstrap required by the pinned Front Door v0.1.0 association count.
+All three examples create dedicated Resource Groups, networks and NGINX applications. Replace the illustrative subscription ID and choose globally unique endpoint names (two in example 02). Azure authentication is supplied externally. Example 03 also requires reviewed approved admin client CIDRs. All examples document the one-time policy bootstrap required by the pinned Front Door v0.1.0 association count.
 
 For a later deployment, review the configuration and costs before running:
 
@@ -51,9 +51,9 @@ tofu apply
 The recommended learning sequence is:
 01 → 02 → 03
 
-All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. Example 01 was subsequently deployed with explicit approval (28 resources added across a policy bootstrap and full apply). After initial Front Door propagation, runtime tests confirmed benign HTTP 200, controlled XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and test evidence. The lab was then destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Example 02 was deployed with explicit approval (48 resources added across bootstrap and full apply). Runtime tests passed on both profiles, including exact-reference managed-rule Block correlation; its README records actual logs and screenshots. Example 02 was subsequently destroyed: 48 resources removed, empty state and Resource Group absence confirmed. Example 03 has not been deployed.
+All three examples passed static formatting, initialization and validation with AzureRM 4.81.0 on October 9, 2026. Example 01 was subsequently deployed with explicit approval (28 resources added across a policy bootstrap and full apply). After initial Front Door propagation, runtime tests confirmed benign HTTP 200, controlled XSS HTTP 403 with a correlated managed-rule `Block`, and origin-access restrictions. Its README contains actual screenshots and test evidence. The lab was then destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Example 02 was deployed with explicit approval (48 resources added across bootstrap and full apply). Runtime tests passed on both profiles, including exact-reference managed-rule Block correlation; its README records actual logs and screenshots. Example 02 was subsequently destroyed: 48 resources removed, empty state and Resource Group absence confirmed. Example 03 was deployed with explicit approval on October 12, 2026: 28 resources added, policy Enabled/Premium/Detection and active association confirmed. Example 03 was subsequently destroyed: 28 resources removed, empty state and Resource Group absence confirmed. Its README records configuration screenshots with Figure 1–8 captions; runtime tests were not performed before cleanup.
 
-Examples 01 and 02 include their attachments and real backends. Example 02's runtime tests passed for both applications: benign HTTP 200, XSS HTTP 403 with correlated managed-rule Block records, shared policy-ID associations, direct-origin restrictions and cross-profile identifier rejection on the local NGINX listeners. Its README contains actual test logs and screenshots with Figure 1–18 captions. Example 03 currently creates only a Front Door policy and requires an external attachment for traffic testing.
+Examples 01 and 02 include their attachments and real backends. Example 02's runtime tests passed for both applications: benign HTTP 200, XSS HTTP 403 with correlated managed-rule Block records, shared policy-ID associations, direct-origin restrictions and cross-profile identifier rejection on the local NGINX listeners. Its README contains actual test logs and screenshots with Figure 1–18 captions. Example 03 includes its own Front Door profile, association, private NGINX backend and diagnostics; the expanded configuration passed static validation and was deployed. Its README records configuration screenshots, but runtime tests were not performed before cleanup.
 
 ---
 
@@ -62,7 +62,7 @@ Examples 01 and 02 include their attachments and real backends. Example 02's run
 - One example = one architectural goal
 - Front Door security policy governance is independent of profile lifecycle
 - The root module creates one Front Door policy; the consuming sibling owns delivery and attachment
-- Examples 01 and 02 each own isolated lab environments; example 03 documents its external dependencies
+- All three examples own isolated lab environments; deployment and enforcement changes require explicit approval
 - No secrets or subscription-specific values in source control
 - Static validation is not represented as successful runtime deployment
 

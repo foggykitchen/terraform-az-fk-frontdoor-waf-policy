@@ -1,5 +1,11 @@
-# Illustrative values only; replace the subscription ID and existing Resource Group.
-subscription_id     = "00000000-0000-0000-0000-000000000000"
-resource_group_name = "fk-security-rg"
-policy_name         = "fkFrontDoorTuning"
-approved_client_cidrs = ["192.0.2.0/24"]
+# Illustrative values only; replace before deployment. No credentials belong here.
+subscription_id             = "00000000-0000-0000-0000-000000000000"
+resource_group_name         = "fk-frontdoor-tuning-rg"
+name_prefix                 = "fk-fd-tuning"
+policy_name                 = "fkFrontDoorTuning"
+endpoint_name               = "replace-with-globally-unique-tuning-endpoint"
+location                    = "westeurope"
+policy_mode                 = "Detection"
+approved_client_cidrs       = ["192.0.2.0/24"] # Documentation CIDR, not a real approved client.
+login_rate_threshold        = 200
+login_rate_duration_minutes = 5
